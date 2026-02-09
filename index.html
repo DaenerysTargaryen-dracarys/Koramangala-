@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Survey Link Generator</title>
-    <script>
+<script>
 const APP_VERSION = 2;
 
 fetch("version.json?rand=" + Date.now())
@@ -840,7 +840,7 @@ fetch("version.json?rand=" + Date.now())
     <div class="heart-dots dot-3"></div>
     <div class="heart-dots dot-4"></div>
     
-    <h1>Float like a butterfly, sting like a bee. ..</h1>
+    <h1>Survey Link Generator</h1>
     
     <div class="file-section">
         <div class="file-input-container">
@@ -878,7 +878,7 @@ fetch("version.json?rand=" + Date.now())
     
     <!-- Search Box -->
     <div class="search-container">
-        <input type="text" id="searchBox" class="search-box" placeholder="Search by Order ID (e.g., 5031)" disabled>
+        <input type="text" id="searchBox" class="search-box" placeholder="Search by Receipt No. (e.g., 5020016988)" disabled>
         <button class="search-btn" id="searchBtn" onclick="searchOrderId()" disabled>Search</button>
         <button class="clear-search" id="clearSearchBtn" onclick="clearSearch()" disabled>Clear Search</button>
     </div>
@@ -939,41 +939,190 @@ let currentQRData = [];
 let currentQRIndex = 0;
 const storeID = "91KDIPL863-01"; // Store Code
 
-// Excel date/time converters
-function convertExcelDate(serial) {
-    const date = new Date((serial - 25569) * 86400 * 1000);
-    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-}
-function convertExcelTime(serial) {
-    const totalMilliseconds = Math.round(serial * 24 * 60 * 60 * 1000);
-    const hours = String(Math.floor(totalMilliseconds / (60 * 60 * 1000))).padStart(2,'0');
-    const minutes = String(Math.floor((totalMilliseconds % (60 * 60 * 1000)) / (60 * 1000))).padStart(2,'0');
-    const seconds = String(Math.floor((totalMilliseconds % (60 * 1000)) / 1000)).padStart(2,'0');
-    const milliseconds = String(totalMilliseconds % 1000).padStart(3,'0');
-    return `${hours}:${minutes}:${seconds}.${milliseconds}`;
+// Parse date and time from your Excel format
+function parseDateTime(dateStr) {
+    if (!dateStr) return { date: '', time: '' };
+    
+    try {
+        // Handle different date formats
+        let datePart, timePart;
+        
+        if (typeof dateStr === 'string') {
+            // Format: "2026-02-09 00:00:00"
+            const parts = dateStr.split(' ');
+            datePart = parts[0];
+            timePart = parts[1] || '00:00:00.000';
+        } else if (dateStr instanceof Date) {
+            // Already a Date object
+            datePart = dateStr.toISOString().split('T')[0];
+            timePart = dateStr.toTimeString().split(' ')[0] + '.000';
+        } else {
+            // Handle Excel serial numbers if needed
+            const excelDate = new Date((dateStr - 25569) * 86400 * 1000);
+            datePart = excelDate.toISOString().split('T')[0];
+            timePart = excelDate.toTimeString().split(' ')[0] + '.000';
+        }
+        
+        // Format time properly
+        let formattedTime = timePart;
+        if (timePart.includes('.')) {
+            const [hms, ms] = timePart.split('.');
+            formattedTime = `${hms}.${ms.substring(0, 3)}`;
+        } else {
+            formattedTime = `${timePart}.000`;
+        }
+        
+        return { date: datePart, time: formattedTime };
+    } catch (error) {
+        console.error('Error parsing date:', error);
+        return { date: '2026-02-09', time: '00:00:00.000' };
+    }
 }
 
-// Generate link
+// Generate survey link based on your Excel data
 function generateSurveyLink(row) {
-    const receiptNo = row['Receipt No.'];
-    const salesType = row['Sales Type'];
-    let surveyModel = '', orderID = '', numericOT = '';
+    try {
+        const receiptNo = String(row['Receipt No.'] || row['Receipt No'] || '').trim();
+        const salesType = String(row['Sales Type'] || row['SalesType'] || '').trim();
+        let phoneNumber = String(row['Sell-to Contact No.'] || row['Sell-to Contact No'] || '').trim();
+        
+        // If no phone number in column, try other possible column names
+        if (!phoneNumber || phoneNumber === 'undefined') {
+            phoneNumber = String(row['Customer No.'] || row['Customer No'] || row['Contact No'] || '').trim();
+        }
+        
+        console.log('Processing row:', {
+            receiptNo,
+            salesType,
+            phoneNumber: phoneNumber.substring(0, 10) + '...',
+            rowKeys: Object.keys(row)
+        });
+        
+        let surveyModel = '', orderID = '', numericOT = '';
 
-    if (/^\d+$/.test(receiptNo) && salesType === 'TAKEAWAY') { surveyModel = '6.0'; orderID = receiptNo; numericOT = '2'; }
-    else if (/^\d+$/.test(receiptNo) && salesType === 'DINE-IN') { surveyModel = '6.0'; orderID = receiptNo; numericOT = '1'; }
-    else if (receiptNo.startsWith('K605') && salesType === 'TAKEAWAY') { surveyModel = '4.0'; orderID = receiptNo.slice(-4); numericOT = '2'; }
-    else if (receiptNo.startsWith('K605') && salesType === 'DINE-IN') { surveyModel = '4.0'; orderID = receiptNo.slice(-4); numericOT = '1'; }
-    else if (receiptNo.startsWith('K605') && salesType === 'DELIVERY') { surveyModel = '3.0'; orderID = receiptNo; numericOT = '3'; }
-    else { return null; }
-
-    const date = convertExcelDate(row['Date']);
-    const time = convertExcelTime(row['Time']);
-    const phoneNumber = `91${row['Sell-to Contact No.']}`;
-    const isoDateTime = `${date}T${time}Z`;
-
-    const data = { "S": storeID, "OI": orderID, "D": date, "TM": time, "DTM": isoDateTime, "TI": orderID, "OT": numericOT, "SM": surveyModel, "PH": phoneNumber };
-    const encodedData = btoa(JSON.stringify(data));
-    return `https://customer.kfc-listens.com/jfe/form/SV_8bHC0noyvM3jPWC?Q_EED=${encodedData}`;
+        // Check for numeric receipt numbers (10 digits like 5020016988)
+        if (/^[0-9]{10,}$/.test(receiptNo)) {
+            if (salesType === 'TAKEAWAY') {
+                surveyModel = '6.0';
+                orderID = receiptNo;
+                numericOT = '2';
+            } else if (salesType === 'DINE-IN') {
+                surveyModel = '6.0';
+                orderID = receiptNo;
+                numericOT = '1';
+            } else if (salesType === 'DELIVERY') {
+                surveyModel = '3.0';
+                orderID = receiptNo;
+                numericOT = '3';
+            }
+        }
+        // Check for K605 receipt numbers (like K605078592)
+        else if (receiptNo.startsWith('K605')) {
+            if (salesType === 'TAKEAWAY') {
+                surveyModel = '4.0';
+                orderID = receiptNo.length >= 4 ? receiptNo.slice(-4) : receiptNo;
+                numericOT = '2';
+            } else if (salesType === 'DINE-IN') {
+                surveyModel = '4.0';
+                orderID = receiptNo.length >= 4 ? receiptNo.slice(-4) : receiptNo;
+                numericOT = '1';
+            } else if (salesType === 'DELIVERY') {
+                surveyModel = '3.0';
+                orderID = receiptNo;
+                numericOT = '3';
+            }
+        }
+        // Check for other patterns
+        else if (receiptNo && receiptNo !== 'undefined') {
+            // Try to extract last 4 digits from any receipt number
+            const last4Digits = receiptNo.match(/\d{4}$/);
+            if (last4Digits) {
+                orderID = last4Digits[0];
+                if (salesType === 'TAKEAWAY') {
+                    surveyModel = '4.0';
+                    numericOT = '2';
+                } else if (salesType === 'DINE-IN') {
+                    surveyModel = '4.0';
+                    numericOT = '1';
+                } else if (salesType === 'DELIVERY') {
+                    surveyModel = '3.0';
+                    numericOT = '3';
+                }
+            }
+        }
+        
+        // If no valid combination found, skip this row
+        if (!surveyModel || !orderID) {
+            console.log('Skipping row - no valid pattern found:', { 
+                receiptNo, 
+                salesType,
+                reason: 'Could not determine survey model or order ID'
+            });
+            return null;
+        }
+        
+        // Parse date and time
+        const dateObj = row['Date'] || row['DATE'] || row['date'] || '2026-02-09';
+        const timeObj = row['Time'] || row['TIME'] || row['time'] || '00:00:00';
+        
+        const dateTime = parseDateTime(dateObj);
+        const date = dateTime.date;
+        let time = timeObj;
+        
+        // Format time if it's not in the right format
+        if (typeof time === 'string') {
+            // Remove any milliseconds part if present in time field
+            time = time.split('.')[0] + '.000';
+        } else {
+            time = dateTime.time;
+        }
+        
+        // If date parsing failed, use today's date
+        const finalDate = date || new Date().toISOString().split('T')[0];
+        
+        // Format phone number - ensure it starts with 91
+        let formattedPhone = phoneNumber;
+        if (phoneNumber && phoneNumber !== 'undefined' && !phoneNumber.startsWith('91')) {
+            // Remove any non-digit characters
+            const digits = phoneNumber.replace(/\D/g, '');
+            if (digits.length >= 10) {
+                formattedPhone = '91' + digits.slice(-10);
+            } else {
+                formattedPhone = '910000000000'; // Default if no valid phone
+            }
+        } else if (!phoneNumber || phoneNumber === 'undefined') {
+            formattedPhone = '910000000000';
+        }
+        
+        // Create ISO datetime string
+        const isoDateTime = `${finalDate}T${time}Z`;
+        
+        // Build data object
+        const data = {
+            "S": storeID,
+            "OI": orderID,
+            "D": finalDate,
+            "TM": time,
+            "DTM": isoDateTime,
+            "TI": orderID,
+            "OT": numericOT,
+            "SM": surveyModel,
+            "PH": formattedPhone
+        };
+        
+        console.log('Generated data for receipt', receiptNo, ':', data);
+        
+        // Encode and create URL
+        const encodedData = btoa(JSON.stringify(data));
+        const url = `https://customer.kfc-listens.com/jfe/form/SV_8bHC0noyvM3jPWC?Q_EED=${encodedData}`;
+        
+        console.log('Generated URL for', receiptNo, ':', url);
+        return url;
+        
+    } catch (error) {
+        console.error('Error generating link for row:', error, row);
+        return null;
+    }
 }
 
 // Create floating hearts animation
@@ -1016,63 +1165,102 @@ function processFile() {
     // Show processing animation
     document.getElementById('processing').style.display = 'block';
     document.getElementById('status').style.display = 'none';
+    document.getElementById('copyAllBtn').disabled = true;
+    document.getElementById('exportBtn').disabled = true;
+    document.getElementById('openQRBtn').disabled = true;
     
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
             const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-            const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-            const filteredData = sheetData.filter(row => !(row['POS Receipt No.']||'').match(/K605SWG|K605ZMT|K605MAGIC/));
-
+            const sheetName = workbook.SheetNames[0];
+            console.log('Sheet name:', sheetName);
+            
+            const sheet = workbook.Sheets[sheetName];
+            const sheetData = XLSX.utils.sheet_to_json(sheet);
+            
+            console.log('Total rows in sheet:', sheetData.length);
+            console.log('First row:', sheetData[0]);
+            console.log('All column names:', Object.keys(sheetData[0] || {}));
+            
+            // Debug: Show first 5 rows
+            for (let i = 0; i < Math.min(5, sheetData.length); i++) {
+                console.log(`Row ${i}:`, sheetData[i]);
+            }
+            
             currentData = [];
             const tbody = document.querySelector('#linkTable tbody');
             tbody.innerHTML = '';
 
             let processedCount = 0;
-            filteredData.forEach((row, index) => {
+            let skippedCount = 0;
+            
+            sheetData.forEach((row, index) => {
                 const link = generateSurveyLink(row);
                 if (link) {
                     processedCount++;
                     const linkData = {
-                        receiptNo: row['Receipt No.'],
-                        salesType: row['Sales Type'],
-                        surveyModel: link.includes('SM=6.0') ? '6.0' : link.includes('SM=4.0') ? '4.0' : link.includes('SM=3.0') ? '3.0' : 'Unknown',
+                        receiptNo: row['Receipt No.'] || row['Receipt No'] || '',
+                        salesType: row['Sales Type'] || row['SalesType'] || '',
+                        surveyModel: link.includes('SM=6.0') ? '6.0' : 
+                                     link.includes('SM=4.0') ? '4.0' : 
+                                     link.includes('SM=3.0') ? '3.0' : 'Unknown',
                         link: link,
-                        copied: false // Track if this link has been copied
+                        copied: false,
+                        originalRow: row // Keep original row for debugging
                     };
                     currentData.push(linkData);
+                } else {
+                    skippedCount++;
+                    console.log(`Skipped row ${index}:`, row);
                 }
             });
 
+            console.log(`Processing complete: Processed ${processedCount}, Skipped ${skippedCount}`);
+            
             // Display all data initially
-            displayData(currentData);
-
-            // Hide processing animation and show success
-            document.getElementById('processing').style.display = 'none';
-            showStatus(`Processed ${processedCount} records with love! 💖`, 'success');
+            if (currentData.length > 0) {
+                displayData(currentData);
+                
+                // Hide processing animation and show success
+                document.getElementById('processing').style.display = 'none';
+                showStatus(`Successfully processed ${processedCount} records! 💖 (Skipped ${skippedCount} invalid records)`, 'success');
+                
+                // Create hearts animation
+                createHearts(20);
+                
+                document.getElementById('copyAllBtn').disabled = false;
+                document.getElementById('exportBtn').disabled = false;
+                document.getElementById('openQRBtn').disabled = false;
+                
+                // Enable search functionality
+                document.getElementById('searchBox').disabled = false;
+                document.getElementById('searchBtn').disabled = false;
+                document.getElementById('clearSearchBtn').disabled = false;
+                
+                // Show sales type filters
+                document.getElementById('salesTypeFilters').style.display = 'flex';
+                
+                // Generate QR codes for all data
+                generateQRCodes(currentData);
+            } else {
+                document.getElementById('processing').style.display = 'none';
+                showStatus(`No valid records found to process. Checked ${sheetData.length} rows, but none matched the required patterns.`, 'error');
+                console.log('All rows that were checked:', sheetData);
+            }
             
-            // Create hearts animation
-            createHearts(20);
-            
-            document.getElementById('copyAllBtn').disabled = false;
-            document.getElementById('exportBtn').disabled = false;
-            document.getElementById('openQRBtn').disabled = false;
-            
-            // Enable search functionality
-            document.getElementById('searchBox').disabled = false;
-            document.getElementById('searchBtn').disabled = false;
-            document.getElementById('clearSearchBtn').disabled = false;
-            
-            // Show sales type filters
-            document.getElementById('salesTypeFilters').style.display = 'flex';
-            
-            // Generate QR codes for all data
-            generateQRCodes(currentData);
         } catch (err) {
             document.getElementById('processing').style.display = 'none';
-            showStatus('Error: ' + err.message, 'error');
+            console.error('Processing error:', err);
+            showStatus('Error processing file: ' + err.message, 'error');
         }
     };
+    
+    reader.onerror = function() {
+        document.getElementById('processing').style.display = 'none';
+        showStatus('Error reading file', 'error');
+    };
+    
     reader.readAsArrayBuffer(file);
 }
 
@@ -1102,7 +1290,7 @@ function displayData(data) {
     });
 }
 
-// Search by Order ID
+// Search by Receipt No.
 function searchOrderId() {
     const searchTerm = document.getElementById('searchBox').value.trim();
     
@@ -1130,6 +1318,7 @@ function searchOrderId() {
 // Clear search and show all data
 function clearSearch() {
     document.getElementById('searchBox').value = '';
+    filteredData = [];
     displayData(currentData);
     showStatus('Showing all records 💖', 'success');
 }
@@ -1302,6 +1491,7 @@ function generateQRCodes(data) {
         info.innerHTML = `
             <div>Receipt: ${item.receiptNo}</div>
             <div>Type: ${item.salesType}</div>
+            <div>Model: ${item.surveyModel}</div>
         `;
         
         slide.appendChild(qrCode);
@@ -1501,8 +1691,3 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
-
-
-
-
-
