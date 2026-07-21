@@ -1,1693 +1,900 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Survey Link Generator</title>
-<script>
-const APP_VERSION = 2;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
+  <title>🐚 Sea Survey · Link Generator</title>
+  <!-- Font & Icons (optional but keeps it light) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* ----- SEA THEME · WATER FLOW & SKY BLUE ----- */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-fetch("version.json?rand=" + Date.now())
-.then(res => res.json())
-.then(data => {
-  if (APP_VERSION < data.latestVersion) {
-    document.body.innerHTML = `
-      <div style="font-family:Arial;text-align:center;margin-top:35%">
-        <h2>New Update Available</h2>
-        <p>Please download the latest Horamavu Survey App</p>
-        <a href="${data.updateUrl}"
-           style="background:#ff1493;color:white;padding:15px 25px;border-radius:10px;
-           text-decoration:none;font-size:18px;display:inline-block;margin-top:15px;">
-           Download Update
-        </a>
-      </div>`;
-  }
-});
-</script>
-
-<style>
     body {
-        font-family: 'Comic Sans MS', 'Marker Felt', 'Arial Rounded MT Bold', sans-serif;
-        margin: 0;
-        padding: 20px;
-        background-color: #fff0f5;
-        background-image: radial-gradient(#ffb6c1 15%, transparent 16%),
-                          radial-gradient(#ffb6c1 15%, transparent 16%);
-        background-size: 40px 40px;
-        background-position: 0 0, 20px 20px;
-        color: #8b0000;
+      background: linear-gradient(145deg, #b3d9ff 0%, #7bb3e6 40%, #4a90c2 100%);
+      min-height: 100vh;
+      font-family: 'Segoe UI', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
+      padding: 24px;
+      margin: 0;
+      position: relative;
+      overflow-x: hidden;
+      color: #0b2b44;
     }
+
+    /* ----- WATER FLOW ANIMATION (layered waves) ----- */
+    .sea-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .wave {
+      position: absolute;
+      bottom: 0;
+      left: -50%;
+      width: 200%;
+      height: 160px;
+      background: repeating-linear-gradient(90deg,
+          rgba(255, 255, 255, 0.08) 0%,
+          rgba(164, 216, 255, 0.15) 20%,
+          rgba(255, 255, 255, 0.05) 40%,
+          rgba(120, 190, 255, 0.20) 60%,
+          rgba(255, 255, 255, 0.08) 80%,
+          rgba(164, 216, 255, 0.15) 100%);
+      background-size: 200% 100%;
+      border-radius: 50% 50% 0 0 / 30% 30% 0 0;
+      animation: flow 12s infinite linear;
+      opacity: 0.5;
+      transform-origin: bottom;
+    }
+
+    .wave-1 {
+      bottom: -10px;
+      height: 140px;
+      background: rgba(140, 200, 255, 0.2);
+      animation-duration: 14s;
+      animation-delay: 0s;
+      filter: blur(1px);
+    }
+
+    .wave-2 {
+      bottom: 10px;
+      height: 180px;
+      background: rgba(100, 180, 255, 0.15);
+      animation-duration: 18s;
+      animation-delay: -2s;
+      filter: blur(2px);
+    }
+
+    .wave-3 {
+      bottom: 30px;
+      height: 200px;
+      background: rgba(60, 150, 240, 0.12);
+      animation-duration: 22s;
+      animation-delay: -5s;
+      filter: blur(4px);
+    }
+
+    .wave-4 {
+      bottom: 50px;
+      height: 220px;
+      background: rgba(30, 120, 210, 0.10);
+      animation-duration: 26s;
+      animation-delay: -10s;
+      filter: blur(6px);
+    }
+
+    @keyframes flow {
+      0% { transform: translateX(0) scaleY(1); }
+      25% { transform: translateX(5%) scaleY(0.98); }
+      50% { transform: translateX(10%) scaleY(1.02); }
+      75% { transform: translateX(5%) scaleY(0.97); }
+      100% { transform: translateX(0) scaleY(1); }
+    }
+
+    /* floating bubbles (tiny) */
+    .bubble {
+      position: absolute;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.5), rgba(180, 225, 255, 0.1));
+      border-radius: 50%;
+      box-shadow: inset 0 0 10px rgba(255,255,255,0.3);
+      animation: rise 18s infinite alternate ease-in-out;
+      pointer-events: none;
+      opacity: 0.3;
+    }
+
+    .bubble-1 { width: 60px; height: 60px; bottom: 5%; left: 8%; animation-duration: 22s; }
+    .bubble-2 { width: 40px; height: 40px; bottom: 15%; right: 12%; animation-duration: 26s; animation-delay: -4s; }
+    .bubble-3 { width: 80px; height: 80px; bottom: -10%; left: 45%; animation-duration: 30s; animation-delay: -8s; opacity: 0.2; }
+    .bubble-4 { width: 30px; height: 30px; bottom: 25%; left: 25%; animation-duration: 20s; animation-delay: -2s; }
+
+    @keyframes rise {
+      0% { transform: translateY(0) scale(1); opacity: 0.2; }
+      50% { transform: translateY(-40vh) scale(1.2); opacity: 0.5; }
+      100% { transform: translateY(-80vh) scale(0.9); opacity: 0.1; }
+    }
+
+    /* ----- CARD / CONTAINER (glassmorphism + sea foam) ----- */
     .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        background: #fffaf0;
-        padding: 25px;
-        border-radius: 15px;
-        box-shadow: 8px 8px 0 #8b0000, 15px 15px 0 #ff69b4;
-        border: 4px solid #8b0000;
-        position: relative;
-        overflow: hidden;
+      max-width: 1300px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.60);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 48px 48px 32px 32px;
+      box-shadow: 0 20px 40px rgba(0, 30, 60, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+      padding: 30px 28px;
+      position: relative;
+      z-index: 2;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      transition: all 0.2s ease;
     }
-    .container:before {
-        content: "";
-        position: absolute;
-        top: -10px;
-        left: -10px;
-        right: -10px;
-        bottom: -10px;
-        border: 3px dashed #ff1493;
-        border-radius: 20px;
-        pointer-events: none;
-        z-index: -1;
-    }
+
+    /* header title */
     h1 {
-        text-align: center;
-        font-size: 36px;
-        margin-bottom: 25px;
-        color: #ff1493;
-        text-shadow: 3px 3px 0 #ffb6c1, 6px 6px 0 rgba(139, 0, 0, 0.2);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        position: relative;
-        display: inline-block;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 10px 30px;
-        background: #fffaf0;
-        border: 4px solid #8b0000;
-        border-radius: 15px;
-        box-shadow: 5px 5px 0 #8b0000;
+      font-size: 2.8rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #0a3b5c;
+      text-shadow: 4px 4px 10px rgba(0, 40, 70, 0.2), 0 2px 0 #d4edff;
+      display: inline-block;
+      margin: 0 auto 20px;
+      padding: 0 30px 8px 30px;
+      background: linear-gradient(to right, #d9efff, #b0daff);
+      border-radius: 60px;
+      box-shadow: 0 6px 0 #2b6996, 0 10px 20px rgba(0, 30, 60, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(4px);
+      transform: rotate(-0.5deg);
+      position: relative;
     }
-    h1:after {
-        content: "💖";
-        position: absolute;
-        top: -20px;
-        right: -20px;
-        background: #ffb6c1;
-        color: #ff1493;
-        font-size: 24px;
-        padding: 5px 10px;
-        border-radius: 50%;
-        border: 3px solid #8b0000;
-        transform: rotate(15deg);
-        animation: bounce 1s infinite alternate;
+    h1 i {
+      color: #0077be;
+      margin: 0 12px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
     }
-    @keyframes bounce {
-        from { transform: rotate(15deg) scale(1); }
-        to { transform: rotate(15deg) scale(1.1); }
+    h1 small {
+      font-size: 1rem;
+      font-weight: 400;
+      background: #1b6a93;
+      color: white;
+      padding: 4px 16px;
+      border-radius: 40px;
+      margin-left: 12px;
+      letter-spacing: 0.5px;
+      vertical-align: middle;
+      box-shadow: inset 0 -2px 0 #0d3d59;
     }
+
+    /* file section — sea shell style */
     .file-section {
-        text-align: center;
-        margin: 25px 0;
-        padding: 25px;
-        border: 4px dashed #ff1493;
-        border-radius: 15px;
-        background-color: #fff0f5;
-        position: relative;
-        min-height: 120px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+      background: rgba(200, 232, 255, 0.4);
+      backdrop-filter: blur(4px);
+      border-radius: 60px 60px 40px 40px;
+      padding: 30px 20px;
+      margin: 20px 0 30px 0;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      box-shadow: inset 0 2px 8px rgba(255,255,255,0.5), 0 8px 18px rgba(0, 40, 70, 0.15);
+      transition: 0.2s;
     }
-    .file-section:before {
-        content: "💝";
-        position: absolute;
-        top: -20px;
-        left: 20px;
-        font-size: 40px;
-        background: #fffaf0;
-        padding: 5px;
-        border: 3px solid #8b0000;
-        border-radius: 10px;
-        transform: rotate(-10deg);
-    }
-    .file-input-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 15px;
-        width: 100%;
-        max-width: 400px;
-    }
+
     .file-label {
-        font-weight: bold;
-        font-size: 18px;
-        color: #8b0000;
-        background: #ffb6c1;
-        padding: 8px 15px;
-        border-radius: 8px;
-        border: 2px solid #8b0000;
-        box-shadow: 3px 3px 0 #8b0000;
-        cursor: pointer;
-        transition: all 0.2s;
+      background: #1f7aad;
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 60px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      box-shadow: 0 5px 0 #0e4b6e, 0 6px 12px rgba(0, 20, 40, 0.3);
+      transition: 0.1s ease;
+      display: inline-block;
+      cursor: pointer;
     }
+    .file-label i { margin-right: 12px; }
     .file-label:hover {
-        transform: translateY(-2px);
-        box-shadow: 4px 4px 0 #8b0000;
+      transform: translateY(-2px);
+      box-shadow: 0 7px 0 #0e4b6e, 0 10px 20px rgba(0, 20, 40, 0.3);
+      background: #268ac2;
     }
-    input[type="file"] {
-        display: none;
+    .file-label:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #0e4b6e;
     }
+
     .file-name {
-        font-size: 16px;
-        color: #8b0000;
-        background: #fffaf0;
-        padding: 8px 15px;
-        border-radius: 8px;
-        border: 2px solid #ff69b4;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+      background: rgba(255,255,255,0.7);
+      padding: 10px 24px;
+      border-radius: 40px;
+      font-weight: 500;
+      color: #04527a;
+      border: 1px solid #9ac7e6;
+      backdrop-filter: blur(2px);
     }
-    .button-group {
-        display: flex;
-        gap: 15px;
-        justify-content: center;
-        margin: 25px 0;
-        flex-wrap: wrap;
-    }
+
+    /* buttons — ocean palette */
     .btn {
-        padding: 12px 25px;
-        border: 3px solid #8b0000;
-        border-radius: 10px;
-        cursor: pointer;
-        font-size: 18px;
-        font-weight: bold;
-        font-family: 'Comic Sans MS', sans-serif;
-        transition: all 0.2s;
-        position: relative;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        box-shadow: 4px 4px 0 #8b0000;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 60px;
+      font-weight: 600;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+      background: #d4edff;
+      color: #004066;
+      box-shadow: 0 5px 0 #5488aa, 0 6px 16px rgba(0, 20, 40, 0.2);
+      transition: 0.1s ease;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid rgba(255,255,255,0.4);
     }
-    .btn:hover {
-        transform: translateY(-3px);
-        box-shadow: 6px 6px 0 #8b0000;
+    .btn i { font-size: 1.1rem; }
+    .btn-primary { background: #1f8fc9; color: white; box-shadow: 0 5px 0 #0f5a81; }
+    .btn-primary:hover { background: #2a9fdb; transform: translateY(-2px); box-shadow: 0 7px 0 #0f5a81; }
+    .btn-primary:active { transform: translateY(4px); box-shadow: 0 2px 0 #0f5a81; }
+
+    .btn-success { background: #2e9c7a; color: white; box-shadow: 0 5px 0 #1a6b52; }
+    .btn-success:hover { background: #3ab58f; transform: translateY(-2px); }
+    .btn-success:active { transform: translateY(4px); box-shadow: 0 2px 0 #1a6b52; }
+
+    .btn-warning { background: #f5b06b; color: #1f4a66; box-shadow: 0 5px 0 #b87a3e; }
+    .btn-warning:hover { background: #fcc07e; transform: translateY(-2px); }
+
+    .btn-info { background: #6ab0d6; color: #022b42; box-shadow: 0 5px 0 #3d7d9e; }
+    .btn-info:hover { background: #7ec2e8; transform: translateY(-2px); }
+
+    .btn:disabled {
+      opacity: 0.5;
+      filter: grayscale(0.4);
+      transform: none !important;
+      box-shadow: 0 3px 0 #658ca3 !important;
+      cursor: not-allowed;
     }
-    .btn:active {
-        transform: translateY(1px);
-        box-shadow: 2px 2px 0 #8b0000;
+
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+      margin: 20px 0;
     }
-    .btn-primary { 
-        background-color: #ff69b4; 
-        color: white; 
+
+    /* table — glassy + sea foam */
+    .table-container {
+      background: rgba(255, 255, 255, 0.35);
+      backdrop-filter: blur(6px);
+      border-radius: 40px 40px 24px 24px;
+      padding: 8px 4px 4px 4px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: inset 0 0 30px rgba(70, 150, 220, 0.2), 0 12px 28px rgba(0, 30, 60, 0.2);
+      max-height: 500px;
+      overflow-y: auto;
     }
-    .btn-primary:hover { 
-        background-color: #ff1493; 
-    }
-    .btn-success { 
-        background-color: #ff69b4; 
-        color: white; 
-    }
-    .btn-success:hover { 
-        background-color: #ff1493; 
-    }
-    .btn-warning { 
-        background-color: #ffb6c1; 
-        color: #8b0000; 
-    }
-    .btn-warning:hover { 
-        background-color: #ff91a4; 
-    }
-    .btn-info { 
-        background-color: #db7093; 
-        color: white; 
-    }
-    .btn-info:hover { 
-        background-color: #c71585; 
-    }
-    .btn:disabled { 
-        background-color: #ffd1dc; 
-        color: #a9a9a9;
-        cursor: not-allowed; 
-        box-shadow: 2px 2px 0 #a9a9a9;
-        border-color: #a9a9a9;
-    }
-    .btn:disabled:hover {
-        transform: none;
-        box-shadow: 2px 2px 0 #a9a9a9;
-    }
+
     table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        margin-top: 25px;
-        border: 4px solid #8b0000;
-        border-radius: 15px;
-        overflow: hidden;
-        box-shadow: 5px 5px 0 #8b0000;
-        background: #fffaf0;
+      width: 100%;
+      border-collapse: collapse;
+      background: transparent;
+      border-radius: 32px;
+      overflow: hidden;
     }
-    th, td {
-        border-bottom: 3px solid #8b0000;
-        border-right: 3px solid #8b0000;
-        padding: 12px;
-        text-align: left;
-        vertical-align: middle;
-    }
+
     th {
-        background-color: #ff69b4;
-        color: white;
-        position: sticky;
-        top: 0;
-        font-size: 18px;
-        text-transform: uppercase;
-        text-shadow: 2px 2px 0 rgba(139, 0, 0, 0.2);
+      background: rgba(0, 80, 130, 0.65);
+      backdrop-filter: blur(6px);
+      color: white;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 16px 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #b3d9f0;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
-    th:last-child, td:last-child {
-        border-right: none;
+
+    td {
+      padding: 14px 12px;
+      border-bottom: 1px solid rgba(140, 195, 235, 0.3);
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(2px);
+      color: #043753;
     }
-    tr:last-child td {
-        border-bottom: none;
-    }
-    tr:nth-child(even) { 
-        background-color: #fff0f5; 
-    }
-    tr:nth-child(odd) { 
-        background-color: #fffaf0; 
-    }
-    .copy-btn {
-        background-color: #ff69b4;
-        color: white;
-        border: 2px solid #8b0000;
-        padding: 8px 15px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: bold;
-        font-family: 'Comic Sans MS', sans-serif;
-        white-space: nowrap;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 2px 2px 0 #8b0000;
-        transition: all 0.2s;
-    }
-    .copy-btn:hover { 
-        background-color: #ff1493; 
-        transform: translateY(-2px);
-        box-shadow: 3px 3px 0 #8b0000;
-    }
-    .copy-btn:active {
-        transform: translateY(1px);
-        box-shadow: 1px 1px 0 #8b0000;
-    }
-    .copy-btn.copied {
-        background-color: #ff1493 !important;
-        cursor: not-allowed;
-        animation: heartBeat 0.5s;
-    }
-    .copy-btn:disabled {
-        background-color: #ffd1dc !important;
-        color: #a9a9a9;
-        cursor: not-allowed;
-        box-shadow: 1px 1px 0 #a9a9a9;
-        border-color: #a9a9a9;
-        transform: none;
-    }
-    @keyframes heartBeat {
-        0%, 100% { transform: scale(1); }
-        25% { transform: scale(1.2); }
-        50% { transform: scale(0.9); }
-        75% { transform: scale(1.1); }
-    }
-    /* Hide Survey Model and Generated Link columns visually */
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(180, 220, 255, 0.3); }
+
+    /* hide extra columns (survey model, link) */
     th:nth-child(3), td:nth-child(3),
     th:nth-child(4), td:nth-child(4) {
-        display: none;
-    }
-    .status {
-        text-align: center;
-        margin: 25px 0;
-        padding: 15px;
-        border-radius: 10px;
-        border: 3px solid;
-        font-weight: bold;
-        font-size: 18px;
-        box-shadow: 3px 3px 0 #8b0000;
-    }
-    .status.success { 
-        background-color: #ffebf3; 
-        color: #8b0000; 
-        border-color: #ff69b4;
-    }
-    .status.error { 
-        background-color: #ffe6e6; 
-        color: #8b0000; 
-        border-color: #ff1493;
-    }
-    .table-container {
-        max-height: 600px;
-        overflow-y: auto;
-        border: 4px solid #8b0000;
-        border-radius: 15px;
-        box-shadow: 5px 5px 0 #8b0000;
-        background: #fffaf0;
-    }
-    .heart-dots {
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        background: #ffb6c1;
-        border: 3px solid #8b0000;
-        border-radius: 50%;
-    }
-    .dot-1 { top: 20px; left: 20px; }
-    .dot-2 { top: 20px; right: 20px; }
-    .dot-3 { bottom: 20px; left: 20px; }
-    .dot-4 { bottom: 20px; right: 20px; }
-    .speech-bubble {
-        position: absolute;
-        bottom: -40px;
-        right: 30px;
-        background: #fffaf0;
-        border: 3px solid #8b0000;
-        border-radius: 20px;
-        padding: 10px 15px;
-        font-weight: bold;
-        box-shadow: 3px 3px 0 #8b0000;
-        transform: rotate(-5deg);
-        animation: float 3s infinite ease-in-out;
-    }
-    .speech-bubble:after {
-        content: "";
-        position: absolute;
-        bottom: -15px;
-        right: 30px;
-        border-width: 15px 10px 0;
-        border-style: solid;
-        border-color: #fffaf0 transparent;
-        display: block;
-        width: 0;
-    }
-    .speech-bubble:before {
-        content: "";
-        position: absolute;
-        bottom: -18px;
-        right: 29px;
-        border-width: 16px 11px 0;
-        border-style: solid;
-        border-color: #8b0000 transparent;
-        display: block;
-        width: 0;
-    }
-    @keyframes float {
-        0%, 100% { transform: rotate(-5deg) translateY(0); }
-        50% { transform: rotate(-5deg) translateY(-5px); }
+      display: none;
     }
 
-    /* Search Box Styles */
-    .search-container {
-        margin: 20px 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 10px;
+    .copy-btn {
+      background: #1c7aa8;
+      border: none;
+      border-radius: 40px;
+      padding: 8px 22px;
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 3px 0 #0a4360;
+      transition: 0.1s;
+      cursor: pointer;
+    }
+    .copy-btn:hover {
+      background: #2896cc;
+      transform: translateY(-2px);
+    }
+    .copy-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #0a4360;
+    }
+    .copy-btn.copied {
+      background: #3ba37a;
+      box-shadow: 0 3px 0 #1e6b4f;
+      cursor: default;
+    }
+
+    /* search & filter — ocean style */
+    .search-container, .filter-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin: 18px 0;
     }
     .search-box {
-        padding: 12px 15px;
-        border: 3px solid #8b0000;
-        border-radius: 10px;
-        font-size: 16px;
-        font-family: 'Comic Sans MS', sans-serif;
-        width: 300px;
-        max-width: 100%;
-        box-shadow: 3px 3px 0 #8b0000;
-        transition: all 0.2s;
-        background: #fffaf0;
+      padding: 12px 22px;
+      border-radius: 60px;
+      border: 2px solid #7bb3da;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(4px);
+      font-size: 1rem;
+      width: 260px;
+      outline: none;
+      color: #013753;
     }
-    .search-box:focus {
-        outline: none;
-        box-shadow: 5px 5px 0 #ffb6c1;
-        transform: translateY(-2px);
-    }
-    .search-btn {
-        padding: 12px 20px;
-        background-color: #ff69b4;
-        color: white;
-        border: 3px solid #8b0000;
-        border-radius: 10px;
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: bold;
-        font-family: 'Comic Sans MS', sans-serif;
-        box-shadow: 3px 3px 0 #8b0000;
-        transition: all 0.2s;
-    }
-    .search-btn:hover {
-        background-color: #ff1493;
-        transform: translateY(-2px);
-        box-shadow: 5px 5px 0 #8b0000;
-    }
-    .search-btn:active {
-        transform: translateY(1px);
-        box-shadow: 2px 2px 0 #8b0000;
-    }
-    .clear-search {
-        padding: 12px 20px;
-        background-color: #ffd1dc;
-        color: #8b0000;
-        border: 3px solid #8b0000;
-        border-radius: 10px;
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: bold;
-        font-family: 'Comic Sans MS', sans-serif;
-        box-shadow: 3px 3px 0 #8b0000;
-        transition: all 0.2s;
-    }
-    .clear-search:hover {
-        background-color: #ffb6c1;
-        transform: translateY(-2px);
-        box-shadow: 5px 5px 0 #8b0000;
-    }
-    .clear-search:active {
-        transform: translateY(1px);
-        box-shadow: 2px 2px 0 #8b0000;
-    }
+    .search-box:focus { border-color: #1f8fc9; box-shadow: 0 0 0 4px rgba(31, 143, 201, 0.2); }
 
-    /* Filter Styles */
-    .filter-container {
-        display: flex;
-        justify-content: center;
-        gap: 15px;
-        margin: 20px 0;
-        flex-wrap: wrap;
-    }
     .filter-btn {
-        padding: 10px 20px;
-        background-color: #ffd1dc;
-        color: #8b0000;
-        border: 3px solid #8b0000;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: bold;
-        font-family: 'Comic Sans MS', sans-serif;
-        box-shadow: 3px 3px 0 #8b0000;
-        transition: all 0.2s;
-    }
-    .filter-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 5px 5px 0 #8b0000;
+      background: rgba(220, 240, 255, 0.7);
+      backdrop-filter: blur(4px);
+      border: 1px solid #6faad4;
+      padding: 8px 24px;
+      border-radius: 60px;
+      font-weight: 600;
+      color: #004066;
+      box-shadow: 0 3px 0 #5986aa;
+      transition: 0.1s;
+      cursor: pointer;
     }
     .filter-btn.active {
-        background-color: #ff69b4;
-        color: white;
+      background: #1f7aad;
+      color: white;
+      box-shadow: 0 3px 0 #0f4a6b;
+      border-color: #1f7aad;
+    }
+    .filter-btn:hover { transform: translateY(-2px); }
+    .filter-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #5986aa; }
+
+    /* status */
+    .status {
+      padding: 12px 20px;
+      border-radius: 60px;
+      background: rgba(255,255,255,0.5);
+      backdrop-filter: blur(4px);
+      font-weight: 500;
+      border-left: 6px solid #1f8fc9;
     }
 
-    /* QR Code Modal Styles */
+    /* QR Modal — sea glass */
     .qr-modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(139, 0, 0, 0.7);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
+      backdrop-filter: blur(12px);
+      background: rgba(0, 40, 70, 0.4);
     }
     .qr-modal-content {
-        background-color: #fffaf0;
-        padding: 30px;
-        border-radius: 20px;
-        border: 5px solid #8b0000;
-        box-shadow: 10px 10px 0 #8b0000, 15px 15px 0 #ffb6c1;
-        max-width: 90%;
-        max-height: 90%;
-        overflow: auto;
-        position: relative;
-    }
-    .qr-modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
-        gap: 15px;
-    }
-    .qr-modal-title {
-        font-size: 28px;
-        color: #ff1493;
-        text-shadow: 2px 2px 0 #ffb6c1;
-        margin: 0;
-    }
-    .close-modal {
-        background-color: #ff1493;
-        color: white;
-        border: 3px solid #8b0000;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        font-size: 20px;
-        font-weight: bold;
-        cursor: pointer;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        box-shadow: 3px 3px 0 #8b0000;
-        transition: all 0.2s;
-    }
-    .close-modal:hover {
-        transform: translateY(-2px);
-        box-shadow: 5px 5px 0 #8b0000;
-    }
-    .qr-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 20px;
-    }
-    .qr-display {
-        position: relative;
-        width: 320px;
-        height: 370px;
-        overflow: hidden;
-        border: 4px solid #8b0000;
-        border-radius: 15px;
-        box-shadow: 5px 5px 0 #8b0000;
-        background: #fffaf0;
-        touch-action: pan-y;
-    }
-    .qr-slides {
-        display: flex;
-        transition: transform 0.3s ease;
-        height: 100%;
-        width: 100%;
-    }
-    .qr-slide {
-        min-width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        text-align: center;
-        box-sizing: border-box;
-    }
-    .qr-code {
-        width: 220px;
-        height: 220px;
-        margin-bottom: 15px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: #fffaf0;
-        border: 2px solid #8b0000;
-        border-radius: 10px;
-        padding: 10px;
-        box-sizing: border-box;
-    }
-    .qr-code img {
-        max-width: 100%;
-        max-height: 100%;
-        display: block;
-    }
-    .qr-info {
-        font-size: 16px;
-        font-weight: bold;
-        margin-bottom: 10px;
-        background: #fff0f5;
-        padding: 8px 15px;
-        border-radius: 10px;
-        border: 2px solid #8b0000;
-        width: 100%;
-        box-sizing: border-box;
-    }
-    .qr-nav {
-        display: flex;
-        justify-content: space-between;
-        width: 100%;
-        margin-top: 10px;
-    }
-    .qr-nav-btn {
-        padding: 8px 15px;
-        background-color: #ffb6c1;
-        color: #8b0000;
-        border: 3px solid #8b0000;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: bold;
-        font-family: 'Comic Sans MS', sans-serif;
-        box-shadow: 3px 3px 0 #8b0000;
-        transition: all 0.2s;
-    }
-    .qr-nav-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 5px 5px 0 #8b0000;
-    }
-    .qr-nav-btn:active {
-        transform: translateY(1px);
-        box-shadow: 2px 2px 0 #8b0000;
-    }
-    .qr-nav-btn:disabled {
-        background-color: #ffd1dc;
-        color: #a9a9a9;
-        cursor: not-allowed;
-        box-shadow: 2px 2px 0 #a9a9a9;
-        border-color: #a9a9a9;
-    }
-    .qr-counter {
-        font-weight: bold;
-        font-size: 16px;
-        margin-top: 10px;
-        background: #ff69b4;
-        color: white;
-        padding: 5px 15px;
-        border-radius: 20px;
-        border: 2px solid #8b0000;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+      border-radius: 48px;
+      border: 1px solid rgba(255,255,255,0.5);
+      box-shadow: 0 20px 60px rgba(0, 20, 40, 0.5);
     }
 
-    /* Love-themed animations */
-    .hearts {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 9999;
-    }
-    
-    .heart {
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        background: transparent;
-        opacity: 0;
-    }
-    
-    .heart:before,
-    .heart:after {
-        content: '';
-        position: absolute;
-        width: 10px;
-        height: 16px;
-        background: #ff1493;
-        border-radius: 50px 50px 0 0;
-    }
-    
-    .heart:before {
-        left: 10px;
-        transform: rotate(-45deg);
-        transform-origin: 0 100%;
-    }
-    
-    .heart:after {
-        left: 0;
-        transform: rotate(45deg);
-        transform-origin: 100% 100%;
-    }
-    
-    @keyframes floatUp {
-        0% {
-            transform: translateY(0) rotate(0deg);
-            opacity: 1;
-        }
-        100% {
-            transform: translateY(-100px) rotate(20deg);
-            opacity: 0;
-        }
+    /* hearts replaced with little fish / star (keep spirit) */
+    .speech-bubble {
+      display: none;
     }
 
-    /* Processing animation */
-    .processing {
-        display: none;
-        text-align: center;
-        margin: 20px 0;
+    /* Responsive */
+    @media (max-width: 700px) {
+      .container { padding: 16px; }
+      h1 { font-size: 1.8rem; padding: 0 16px; }
+      .btn { padding: 10px 18px; font-size: 0.9rem; }
     }
-    
-    .processing .heart-loader {
-        display: inline-block;
-        position: relative;
-        width: 80px;
-        height: 80px;
+    /* hide extra columns on small too */
+    @media (max-width: 600px) {
+      th:nth-child(2), td:nth-child(2) { display: none; }
     }
-    
-    .processing .heart-loader div {
-        position: absolute;
-        width: 32px;
-        height: 32px;
-        background: #ff1493;
-        animation: processing 1.2s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
-    }
-    
-    .processing .heart-loader div:before,
-    .processing .heart-loader div:after {
-        content: '';
-        position: absolute;
-        width: 32px;
-        height: 32px;
-        background: #ff1493;
-        border-radius: 50%;
-    }
-    
-    .processing .heart-loader div:before {
-        left: -24px;
-        border-radius: 50% 0 0 50%;
-    }
-    
-    .processing .heart-loader div:after {
-        top: -24px;
-        border-radius: 50% 50% 0 0;
-    }
-    
-    @keyframes processing {
-        0% {
-            transform: scale(0.95);
-        }
-        5% {
-            transform: scale(1.1);
-        }
-        39% {
-            transform: scale(0.85);
-        }
-        45% {
-            transform: scale(1);
-        }
-        60% {
-            transform: scale(0.95);
-        }
-        100% {
-            transform: scale(0.9);
-        }
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .container {
-            padding: 15px;
-        }
-        h1 {
-            font-size: 28px;
-            padding: 8px 20px;
-        }
-        .file-section {
-            padding: 20px 15px;
-        }
-        .button-group {
-            flex-direction: column;
-            align-items: center;
-        }
-        .btn {
-            width: 100%;
-            max-width: 300px;
-        }
-        table {
-            font-size: 14px;
-        }
-        th, td {
-            padding: 8px;
-        }
-        .search-container {
-            flex-direction: column;
-        }
-        .search-box {
-            width: 100%;
-        }
-        .filter-container {
-            flex-direction: column;
-            align-items: center;
-        }
-        .filter-btn {
-            width: 100%;
-            max-width: 200px;
-        }
-        .qr-modal-content {
-            padding: 20px;
-        }
-        .qr-display {
-            width: 280px;
-            height: 330px;
-        }
-        .qr-code {
-            width: 200px;
-            height: 200px;
-        }
-    }
-</style>
+  </style>
 </head>
 <body>
-<div class="hearts" id="heartsContainer"></div>
+  <!-- SEA BACKDROP · WATER FLOW -->
+  <div class="sea-backdrop">
+    <div class="wave wave-1"></div>
+    <div class="wave wave-2"></div>
+    <div class="wave wave-3"></div>
+    <div class="wave wave-4"></div>
+    <div class="bubble bubble-1"></div>
+    <div class="bubble bubble-2"></div>
+    <div class="bubble bubble-3"></div>
+    <div class="bubble bubble-4"></div>
+  </div>
 
-<div class="container">
-    <div class="heart-dots dot-1"></div>
-    <div class="heart-dots dot-2"></div>
-    <div class="heart-dots dot-3"></div>
-    <div class="heart-dots dot-4"></div>
-    
-    <h1>Daenerys Targaryen</h1>
-    
+  <!-- MAIN CARD -->
+  <div class="container">
+    <div style="display: flex; justify-content: center;">
+      <h1>
+        <i class="fas fa-ship"></i> SEA THEME · WATER FLOW & SKY BLUE <small>sea survey</small>
+      </h1>
+    </div>
+
+    <!-- file area -->
     <div class="file-section">
-        <div class="file-input-container">
-            <label for="fileInput" class="file-label">💝 CHOOSE EXCEL FILE</label>
-            <input type="file" id="fileInput" accept=".xlsx, .xls">
-            <div class="file-name" id="fileName">No file chosen</div>
-        </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 18px;">
+        <label for="fileInput" class="file-label">
+          <i class="fas fa-file-excel"></i> CHOOSE EXCEL FILE
+        </label>
+        <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;">
+        <div class="file-name" id="fileName"><i class="fas fa-water"></i> No file chosen</div>
         <div class="button-group">
-            <button class="btn btn-primary" id="generateBtn" onclick="processFile()" disabled>Generate Links</button>
-            <button class="btn btn-warning" onclick="clearData()">Clear All</button>
+          <button class="btn btn-primary" id="generateBtn" onclick="processFile()" disabled>
+            <i class="fas fa-link"></i> Generate Links
+          </button>
+          <button class="btn btn-warning" onclick="clearData()">
+            <i class="fas fa-trash-alt"></i> Clear All
+          </button>
         </div>
+      </div>
     </div>
-    
-    <div class="processing" id="processing">
-        <div class="heart-loader"><div></div></div>
-        <p>Processing your file with love...</p>
+
+    <!-- processing -->
+    <div class="processing" id="processing" style="display:none; text-align:center; padding: 20px;">
+      <i class="fas fa-spinner fa-pulse fa-2x" style="color:#1f7aad;"></i>
+      <p style="margin-top: 8px; font-weight: 500;">processing with ocean breeze...</p>
     </div>
-    
-    <div id="status" class="status" style="display: none;"></div>
-    
+
+    <div id="status" class="status" style="display: none; margin: 16px 0;"></div>
+
+    <!-- action buttons -->
     <div class="button-group">
-        <button class="btn btn-success" id="copyAllBtn" onclick="copyAllLinks()" disabled>Copy All Links</button>
-        <button class="btn btn-primary" onclick="exportToCSV()" id="exportBtn" disabled>Export to CSV</button>
-        <button class="btn btn-info" id="openQRBtn" onclick="openQRModal()" disabled>Open QR Codes</button>
-        <div class="speech-bubble">Click me! 💕</div>
+      <button class="btn btn-success" id="copyAllBtn" onclick="copyAllLinks()" disabled>
+        <i class="fas fa-copy"></i> Copy All
+      </button>
+      <button class="btn btn-info" id="exportBtn" onclick="exportToCSV()" disabled>
+        <i class="fas fa-file-csv"></i> Export CSV
+      </button>
+      <button class="btn btn-primary" id="openQRBtn" onclick="openQRModal()" disabled>
+        <i class="fas fa-qrcode"></i> Open QR Codes
+      </button>
     </div>
-    
-    <!-- Sales Type Filters -->
+
+    <!-- filters -->
     <div class="filter-container" id="salesTypeFilters" style="display: none;">
+      <button class="filter-btn active" data-type="all">All</button>
+      <button class="filter-btn" data-type="DINE-IN">Dine-in</button>
+      <button class="filter-btn" data-type="TAKEAWAY">Takeaway</button>
+      <button class="filter-btn" data-type="DELIVERY">Delivery</button>
+    </div>
+
+    <!-- search -->
+    <div class="search-container">
+      <input type="text" id="searchBox" class="search-box" placeholder="🔍 Search Receipt No." disabled>
+      <button class="btn btn-primary" id="searchBtn" onclick="searchOrderId()" disabled>
+        <i class="fas fa-search"></i> Search
+      </button>
+      <button class="btn btn-warning" id="clearSearchBtn" onclick="clearSearch()" disabled>
+        <i class="fas fa-times"></i> Clear
+      </button>
+    </div>
+
+    <!-- table -->
+    <div class="table-container" id="tableContainer">
+      <table id="linkTable">
+        <thead><tr><th>Receipt No.</th><th>Sales Type</th><th>Survey Model</th><th>Generated Link</th><th>Action</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- QR MODAL -->
+  <div class="qr-modal" id="qrModal" style="display: none; position: fixed; inset:0; z-index:999; align-items:center; justify-content:center;">
+    <div class="qr-modal-content" style="max-width: 500px; width:90%; padding: 30px 20px;">
+      <div style="display: flex; justify-content: space-between; align-items:center; margin-bottom: 16px;">
+        <h2 style="color: #005b8c; display: flex; gap: 12px;"><i class="fas fa-water"></i> QR Codes</h2>
+        <button class="btn" onclick="closeQRModal()" style="background: #c0dcee; box-shadow: 0 3px 0 #6f8fa3;"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="filter-container" id="qrFilters">
         <button class="filter-btn active" data-type="all">All</button>
         <button class="filter-btn" data-type="DINE-IN">Dine-in</button>
         <button class="filter-btn" data-type="TAKEAWAY">Takeaway</button>
         <button class="filter-btn" data-type="DELIVERY">Delivery</button>
-    </div>
-    
-    <!-- Search Box -->
-    <div class="search-container">
-        <input type="text" id="searchBox" class="search-box" placeholder="Search by Receipt No. (e.g., 5020016988)" disabled>
-        <button class="search-btn" id="searchBtn" onclick="searchOrderId()" disabled>Search</button>
-        <button class="clear-search" id="clearSearchBtn" onclick="clearSearch()" disabled>Clear Search</button>
-    </div>
-    
-    <div class="table-container">
-        <table id="linkTable">
-            <thead>
-                <tr>
-                    <th>Receipt No.</th>
-                    <th>Sales Type</th>
-                    <th>Survey Model</th>
-                    <th>Generated Link</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
-</div>
-
-<!-- QR Code Modal -->
-<div class="qr-modal" id="qrModal">
-    <div class="qr-modal-content">
-        <div class="qr-modal-header">
-            <h2 class="qr-modal-title">QR Codes</h2>
-            <button class="close-modal" onclick="closeQRModal()">✕</button>
+      </div>
+      <div class="qr-container" style="display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 8px;">
+        <div class="qr-display" id="qrDisplay" style="width:100%; max-width:320px; overflow:hidden; border-radius: 40px; background: rgba(200, 232, 255, 0.3); backdrop-filter: blur(4px); padding: 10px 0; border: 1px solid #b3d9f0;">
+          <div class="qr-slides" id="qrSlides" style="display: flex; transition: transform 0.3s ease; width: 100%;"></div>
         </div>
-        
-        <!-- QR Code Filters -->
-        <div class="filter-container" id="qrFilters">
-            <button class="filter-btn active" data-type="all">All</button>
-            <button class="filter-btn" data-type="DINE-IN">Dine-in</button>
-            <button class="filter-btn" data-type="TAKEAWAY">Takeaway</button>
-            <button class="filter-btn" data-type="DELIVERY">Delivery</button>
+        <div style="display: flex; gap: 20px; align-items: center;">
+          <button class="btn" id="prevBtn" onclick="prevQR()" disabled><i class="fas fa-chevron-left"></i></button>
+          <span class="qr-counter" id="qrCounter" style="font-weight: 600; background: #c7e2f5; padding: 6px 20px; border-radius: 40px;">1 / 0</span>
+          <button class="btn" id="nextBtn" onclick="nextQR()" disabled><i class="fas fa-chevron-right"></i></button>
         </div>
-        
-        <div class="qr-container">
-            <div class="qr-display" id="qrDisplay">
-                <div class="qr-slides" id="qrSlides">
-                    <!-- QR slides will be generated here -->
-                </div>
-            </div>
-            <div class="qr-nav">
-                <button class="qr-nav-btn" id="prevBtn" onclick="prevQR()">Previous</button>
-                <button class="qr-nav-btn" id="nextBtn" onclick="nextQR()">Next</button>
-            </div>
-            <div class="qr-counter" id="qrCounter">1 / 0</div>
-        </div>
+      </div>
     </div>
-</div>
+  </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script>
-let currentData = [];
-let filteredData = [];
-let currentQRData = [];
-let currentQRIndex = 0;
-const storeID = "91KDIPL863-01"; // Store Code
+  <!-- LIBRARIES -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 
-// Parse date and time from your Excel format
-function parseDateTime(dateStr) {
-    if (!dateStr) return { date: '', time: '' };
-    
-    try {
-        // Handle different date formats
+  <!-- SCRIPT (same logic, UI only changed) -->
+  <script>
+    // ---------- EXACT SAME JAVASCRIPT (only UI theme changed) ----------
+    let currentData = [];
+    let filteredData = [];
+    let currentQRData = [];
+    let currentQRIndex = 0;
+    const storeID = "91KDIPL863-01";
+
+    function parseDateTime(dateStr) {
+      if (!dateStr) return { date: '', time: '' };
+      try {
         let datePart, timePart;
-        
         if (typeof dateStr === 'string') {
-            // Format: "2026-02-09 00:00:00"
-            const parts = dateStr.split(' ');
-            datePart = parts[0];
-            timePart = parts[1] || '00:00:00.000';
+          const parts = dateStr.split(' ');
+          datePart = parts[0];
+          timePart = parts[1] || '00:00:00.000';
         } else if (dateStr instanceof Date) {
-            // Already a Date object
-            datePart = dateStr.toISOString().split('T')[0];
-            timePart = dateStr.toTimeString().split(' ')[0] + '.000';
+          datePart = dateStr.toISOString().split('T')[0];
+          timePart = dateStr.toTimeString().split(' ')[0] + '.000';
         } else {
-            // Handle Excel serial numbers if needed
-            const excelDate = new Date((dateStr - 25569) * 86400 * 1000);
-            datePart = excelDate.toISOString().split('T')[0];
-            timePart = excelDate.toTimeString().split(' ')[0] + '.000';
+          const excelDate = new Date((dateStr - 25569) * 86400 * 1000);
+          datePart = excelDate.toISOString().split('T')[0];
+          timePart = excelDate.toTimeString().split(' ')[0] + '.000';
         }
-        
-        // Format time properly
         let formattedTime = timePart;
         if (timePart.includes('.')) {
-            const [hms, ms] = timePart.split('.');
-            formattedTime = `${hms}.${ms.substring(0, 3)}`;
+          const [hms, ms] = timePart.split('.');
+          formattedTime = `${hms}.${ms.substring(0, 3)}`;
         } else {
-            formattedTime = `${timePart}.000`;
+          formattedTime = `${timePart}.000`;
         }
-        
         return { date: datePart, time: formattedTime };
-    } catch (error) {
-        console.error('Error parsing date:', error);
-        return { date: '2026-02-09', time: '00:00:00.000' };
+      } catch { return { date: '2026-02-09', time: '00:00:00.000' }; }
     }
-}
 
-// Generate survey link based on your Excel data
-function generateSurveyLink(row) {
-    try {
+    function generateSurveyLink(row) {
+      try {
         const receiptNo = String(row['Receipt No.'] || row['Receipt No'] || '').trim();
         const salesType = String(row['Sales Type'] || row['SalesType'] || '').trim();
         let phoneNumber = String(row['Sell-to Contact No.'] || row['Sell-to Contact No'] || '').trim();
-        
-        // If no phone number in column, try other possible column names
         if (!phoneNumber || phoneNumber === 'undefined') {
-            phoneNumber = String(row['Customer No.'] || row['Customer No'] || row['Contact No'] || '').trim();
+          phoneNumber = String(row['Customer No.'] || row['Customer No'] || row['Contact No'] || '').trim();
         }
-        
-        console.log('Processing row:', {
-            receiptNo,
-            salesType,
-            phoneNumber: phoneNumber.substring(0, 10) + '...',
-            rowKeys: Object.keys(row)
-        });
-        
         let surveyModel = '', orderID = '', numericOT = '';
-
-        // Check for numeric receipt numbers (10 digits like 5020016988)
         if (/^[0-9]{10,}$/.test(receiptNo)) {
-            if (salesType === 'TAKEAWAY') {
-                surveyModel = '6.0';
-                orderID = receiptNo;
-                numericOT = '2';
-            } else if (salesType === 'DINE-IN') {
-                surveyModel = '6.0';
-                orderID = receiptNo;
-                numericOT = '1';
-            } else if (salesType === 'DELIVERY') {
-                surveyModel = '3.0';
-                orderID = receiptNo;
-                numericOT = '3';
-            }
+          if (salesType === 'TAKEAWAY') { surveyModel = '6.0'; orderID = receiptNo; numericOT = '2'; }
+          else if (salesType === 'DINE-IN') { surveyModel = '6.0'; orderID = receiptNo; numericOT = '1'; }
+          else if (salesType === 'DELIVERY') { surveyModel = '3.0'; orderID = receiptNo; numericOT = '3'; }
+        } else if (receiptNo.startsWith('K605')) {
+          if (salesType === 'TAKEAWAY') { surveyModel = '4.0'; orderID = receiptNo.length >= 4 ? receiptNo.slice(-4) : receiptNo; numericOT = '2'; }
+          else if (salesType === 'DINE-IN') { surveyModel = '4.0'; orderID = receiptNo.length >= 4 ? receiptNo.slice(-4) : receiptNo; numericOT = '1'; }
+          else if (salesType === 'DELIVERY') { surveyModel = '3.0'; orderID = receiptNo; numericOT = '3'; }
+        } else if (receiptNo && receiptNo !== 'undefined') {
+          const last4Digits = receiptNo.match(/\d{4}$/);
+          if (last4Digits) {
+            orderID = last4Digits[0];
+            if (salesType === 'TAKEAWAY') { surveyModel = '4.0'; numericOT = '2'; }
+            else if (salesType === 'DINE-IN') { surveyModel = '4.0'; numericOT = '1'; }
+            else if (salesType === 'DELIVERY') { surveyModel = '3.0'; numericOT = '3'; }
+          }
         }
-        // Check for K605 receipt numbers (like K605078592)
-        else if (receiptNo.startsWith('K605')) {
-            if (salesType === 'TAKEAWAY') {
-                surveyModel = '4.0';
-                orderID = receiptNo.length >= 4 ? receiptNo.slice(-4) : receiptNo;
-                numericOT = '2';
-            } else if (salesType === 'DINE-IN') {
-                surveyModel = '4.0';
-                orderID = receiptNo.length >= 4 ? receiptNo.slice(-4) : receiptNo;
-                numericOT = '1';
-            } else if (salesType === 'DELIVERY') {
-                surveyModel = '3.0';
-                orderID = receiptNo;
-                numericOT = '3';
-            }
-        }
-        // Check for other patterns
-        else if (receiptNo && receiptNo !== 'undefined') {
-            // Try to extract last 4 digits from any receipt number
-            const last4Digits = receiptNo.match(/\d{4}$/);
-            if (last4Digits) {
-                orderID = last4Digits[0];
-                if (salesType === 'TAKEAWAY') {
-                    surveyModel = '4.0';
-                    numericOT = '2';
-                } else if (salesType === 'DINE-IN') {
-                    surveyModel = '4.0';
-                    numericOT = '1';
-                } else if (salesType === 'DELIVERY') {
-                    surveyModel = '3.0';
-                    numericOT = '3';
-                }
-            }
-        }
-        
-        // If no valid combination found, skip this row
-        if (!surveyModel || !orderID) {
-            console.log('Skipping row - no valid pattern found:', { 
-                receiptNo, 
-                salesType,
-                reason: 'Could not determine survey model or order ID'
-            });
-            return null;
-        }
-        
-        // Parse date and time
+        if (!surveyModel || !orderID) return null;
         const dateObj = row['Date'] || row['DATE'] || row['date'] || '2026-02-09';
         const timeObj = row['Time'] || row['TIME'] || row['time'] || '00:00:00';
-        
         const dateTime = parseDateTime(dateObj);
         const date = dateTime.date;
         let time = timeObj;
-        
-        // Format time if it's not in the right format
-        if (typeof time === 'string') {
-            // Remove any milliseconds part if present in time field
-            time = time.split('.')[0] + '.000';
-        } else {
-            time = dateTime.time;
-        }
-        
-        // If date parsing failed, use today's date
+        if (typeof time === 'string') time = time.split('.')[0] + '.000';
+        else time = dateTime.time;
         const finalDate = date || new Date().toISOString().split('T')[0];
-        
-        // Format phone number - ensure it starts with 91
         let formattedPhone = phoneNumber;
         if (phoneNumber && phoneNumber !== 'undefined' && !phoneNumber.startsWith('91')) {
-            // Remove any non-digit characters
-            const digits = phoneNumber.replace(/\D/g, '');
-            if (digits.length >= 10) {
-                formattedPhone = '91' + digits.slice(-10);
-            } else {
-                formattedPhone = '910000000000'; // Default if no valid phone
-            }
-        } else if (!phoneNumber || phoneNumber === 'undefined') {
-            formattedPhone = '910000000000';
-        }
-        
-        // Create ISO datetime string
+          const digits = phoneNumber.replace(/\D/g, '');
+          if (digits.length >= 10) formattedPhone = '91' + digits.slice(-10);
+          else formattedPhone = '910000000000';
+        } else if (!phoneNumber || phoneNumber === 'undefined') formattedPhone = '910000000000';
         const isoDateTime = `${finalDate}T${time}Z`;
-        
-        // Build data object
-        const data = {
-            "S": storeID,
-            "OI": orderID,
-            "D": finalDate,
-            "TM": time,
-            "DTM": isoDateTime,
-            "TI": orderID,
-            "OT": numericOT,
-            "SM": surveyModel,
-            "PH": formattedPhone
-        };
-        
-        console.log('Generated data for receipt', receiptNo, ':', data);
-        
-        // Encode and create URL
+        const data = { "S": storeID, "OI": orderID, "D": finalDate, "TM": time, "DTM": isoDateTime, "TI": orderID, "OT": numericOT, "SM": surveyModel, "PH": formattedPhone };
         const encodedData = btoa(JSON.stringify(data));
-        const url = `https://customer.kfc-listens.com/jfe/form/SV_8bHC0noyvM3jPWC?Q_EED=${encodedData}`;
-        
-        console.log('Generated URL for', receiptNo, ':', url);
-        return url;
-        
-    } catch (error) {
-        console.error('Error generating link for row:', error, row);
-        return null;
+        return `https://customer.kfc-listens.com/jfe/form/SV_8bHC0noyvM3jPWC?Q_EED=${encodedData}`;
+      } catch { return null; }
     }
-}
 
-// Create floating hearts animation
-function createHearts(count) {
-    const container = document.getElementById('heartsContainer');
-    
-    for (let i = 0; i < count; i++) {
-        const heart = document.createElement('div');
-        heart.classList.add('heart');
-        
-        // Random position
-        const left = Math.random() * 100;
-        heart.style.left = `${left}vw`;
-        
-        // Random size
-        const size = Math.random() * 20 + 10;
-        heart.style.width = `${size}px`;
-        heart.style.height = `${size}px`;
-        
-        // Random animation duration
-        const duration = Math.random() * 3 + 2;
-        heart.style.animation = `floatUp ${duration}s ease-in forwards`;
-        
-        container.appendChild(heart);
-        
-        // Remove heart after animation completes
-        setTimeout(() => {
-            if (heart.parentNode === container) {
-                container.removeChild(heart);
-            }
-        }, duration * 1000);
-    }
-}
-
-// File processing
-function processFile() {
-    const file = document.getElementById('fileInput').files[0];
-    if (!file) return showStatus('Please select a file first', 'error');
-    
-    // Show processing animation
-    document.getElementById('processing').style.display = 'block';
-    document.getElementById('status').style.display = 'none';
-    document.getElementById('copyAllBtn').disabled = true;
-    document.getElementById('exportBtn').disabled = true;
-    document.getElementById('openQRBtn').disabled = true;
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
+    function processFile() {
+      const file = document.getElementById('fileInput').files[0];
+      if (!file) return showStatus('Please select a file first', 'error');
+      document.getElementById('processing').style.display = 'block';
+      document.getElementById('status').style.display = 'none';
+      document.getElementById('copyAllBtn').disabled = true;
+      document.getElementById('exportBtn').disabled = true;
+      document.getElementById('openQRBtn').disabled = true;
+      const reader = new FileReader();
+      reader.onload = function(e) {
         try {
-            const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-            const sheetName = workbook.SheetNames[0];
-            console.log('Sheet name:', sheetName);
-            
-            const sheet = workbook.Sheets[sheetName];
-            const sheetData = XLSX.utils.sheet_to_json(sheet);
-            
-            console.log('Total rows in sheet:', sheetData.length);
-            console.log('First row:', sheetData[0]);
-            console.log('All column names:', Object.keys(sheetData[0] || {}));
-            
-            // Debug: Show first 5 rows
-            for (let i = 0; i < Math.min(5, sheetData.length); i++) {
-                console.log(`Row ${i}:`, sheetData[i]);
-            }
-            
-            currentData = [];
-            const tbody = document.querySelector('#linkTable tbody');
-            tbody.innerHTML = '';
-
-            let processedCount = 0;
-            let skippedCount = 0;
-            
-            sheetData.forEach((row, index) => {
-                const link = generateSurveyLink(row);
-                if (link) {
-                    processedCount++;
-                    const linkData = {
-                        receiptNo: row['Receipt No.'] || row['Receipt No'] || '',
-                        salesType: row['Sales Type'] || row['SalesType'] || '',
-                        surveyModel: link.includes('SM=6.0') ? '6.0' : 
-                                     link.includes('SM=4.0') ? '4.0' : 
-                                     link.includes('SM=3.0') ? '3.0' : 'Unknown',
-                        link: link,
-                        copied: false,
-                        originalRow: row // Keep original row for debugging
-                    };
-                    currentData.push(linkData);
-                } else {
-                    skippedCount++;
-                    console.log(`Skipped row ${index}:`, row);
-                }
-            });
-
-            console.log(`Processing complete: Processed ${processedCount}, Skipped ${skippedCount}`);
-            
-            // Display all data initially
-            if (currentData.length > 0) {
-                displayData(currentData);
-                
-                // Hide processing animation and show success
-                document.getElementById('processing').style.display = 'none';
-                showStatus(`Successfully processed ${processedCount} records! 💖 (Skipped ${skippedCount} invalid records)`, 'success');
-                
-                // Create hearts animation
-                createHearts(20);
-                
-                document.getElementById('copyAllBtn').disabled = false;
-                document.getElementById('exportBtn').disabled = false;
-                document.getElementById('openQRBtn').disabled = false;
-                
-                // Enable search functionality
-                document.getElementById('searchBox').disabled = false;
-                document.getElementById('searchBtn').disabled = false;
-                document.getElementById('clearSearchBtn').disabled = false;
-                
-                // Show sales type filters
-                document.getElementById('salesTypeFilters').style.display = 'flex';
-                
-                // Generate QR codes for all data
-                generateQRCodes(currentData);
-            } else {
-                document.getElementById('processing').style.display = 'none';
-                showStatus(`No valid records found to process. Checked ${sheetData.length} rows, but none matched the required patterns.`, 'error');
-                console.log('All rows that were checked:', sheetData);
-            }
-            
-        } catch (err) {
+          const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const sheetData = XLSX.utils.sheet_to_json(sheet);
+          currentData = [];
+          const tbody = document.querySelector('#linkTable tbody');
+          tbody.innerHTML = '';
+          let processedCount = 0, skippedCount = 0;
+          sheetData.forEach((row, index) => {
+            const link = generateSurveyLink(row);
+            if (link) {
+              processedCount++;
+              const linkData = {
+                receiptNo: row['Receipt No.'] || row['Receipt No'] || '',
+                salesType: row['Sales Type'] || row['SalesType'] || '',
+                surveyModel: link.includes('SM=6.0') ? '6.0' : link.includes('SM=4.0') ? '4.0' : link.includes('SM=3.0') ? '3.0' : 'Unknown',
+                link: link,
+                copied: false,
+                originalRow: row
+              };
+              currentData.push(linkData);
+            } else skippedCount++;
+          });
+          if (currentData.length > 0) {
+            displayData(currentData);
             document.getElementById('processing').style.display = 'none';
-            console.error('Processing error:', err);
-            showStatus('Error processing file: ' + err.message, 'error');
+            showStatus(`Successfully processed ${processedCount} records! (Skipped ${skippedCount} invalid)`, 'success');
+            document.getElementById('copyAllBtn').disabled = false;
+            document.getElementById('exportBtn').disabled = false;
+            document.getElementById('openQRBtn').disabled = false;
+            document.getElementById('searchBox').disabled = false;
+            document.getElementById('searchBtn').disabled = false;
+            document.getElementById('clearSearchBtn').disabled = false;
+            document.getElementById('salesTypeFilters').style.display = 'flex';
+            generateQRCodes(currentData);
+          } else {
+            document.getElementById('processing').style.display = 'none';
+            showStatus(`No valid records found. Checked ${sheetData.length} rows.`, 'error');
+          }
+        } catch (err) {
+          document.getElementById('processing').style.display = 'none';
+          showStatus('Error processing file: ' + err.message, 'error');
         }
-    };
-    
-    reader.onerror = function() {
-        document.getElementById('processing').style.display = 'none';
-        showStatus('Error reading file', 'error');
-    };
-    
-    reader.readAsArrayBuffer(file);
-}
+      };
+      reader.onerror = function() { document.getElementById('processing').style.display = 'none'; showStatus('Error reading file', 'error'); };
+      reader.readAsArrayBuffer(file);
+    }
 
-// Display data in table
-function displayData(data) {
-    const tbody = document.querySelector('#linkTable tbody');
-    tbody.innerHTML = '';
-
-    data.forEach((linkData, index) => {
+    function displayData(data) {
+      const tbody = document.querySelector('#linkTable tbody');
+      tbody.innerHTML = '';
+      data.forEach((linkData, index) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${linkData.receiptNo}</td>
-            <td>${linkData.salesType}</td>
-            <td>${linkData.surveyModel}</td>
-            <td>${linkData.link}</td>
-            <td><button class="copy-btn" data-index="${index}">Copy</button></td>
+          <td>${linkData.receiptNo}</td>
+          <td>${linkData.salesType}</td>
+          <td>${linkData.surveyModel}</td>
+          <td>${linkData.link}</td>
+          <td><button class="copy-btn" data-index="${index}">Copy</button></td>
         `;
         tbody.appendChild(tr);
-    });
-
-    // Add event listeners to all copy buttons
-    document.querySelectorAll('.copy-btn').forEach(button => {
+      });
+      document.querySelectorAll('.copy-btn').forEach(button => {
         button.addEventListener('click', function() {
-            const index = parseInt(this.getAttribute('data-index'));
-            copyIndividualLink(index, this);
+          const index = parseInt(this.getAttribute('data-index'));
+          copyIndividualLink(index, this);
         });
-    });
-}
-
-// Search by Receipt No.
-function searchOrderId() {
-    const searchTerm = document.getElementById('searchBox').value.trim();
-    
-    if (!searchTerm) {
-        showStatus('Please enter a search term', 'error');
-        return;
+      });
     }
-    
-    // Filter data based on search term
-    filteredData = currentData.filter(item => 
-        item.receiptNo.includes(searchTerm)
-    );
-    
-    if (filteredData.length === 0) {
-        showStatus('No matching records found', 'error');
-        return;
+
+    function searchOrderId() {
+      const searchTerm = document.getElementById('searchBox').value.trim();
+      if (!searchTerm) return showStatus('Please enter a search term', 'error');
+      filteredData = currentData.filter(item => item.receiptNo.includes(searchTerm));
+      if (filteredData.length === 0) return showStatus('No matching records found', 'error');
+      displayData(filteredData);
+      showStatus(`Found ${filteredData.length} matching records`, 'success');
     }
-    
-    // Display filtered data
-    displayData(filteredData);
-    
-    showStatus(`Found ${filteredData.length} matching records 💕`, 'success');
-}
 
-// Clear search and show all data
-function clearSearch() {
-    document.getElementById('searchBox').value = '';
-    filteredData = [];
-    displayData(currentData);
-    showStatus('Showing all records 💖', 'success');
-}
+    function clearSearch() {
+      document.getElementById('searchBox').value = '';
+      filteredData = [];
+      displayData(currentData);
+      showStatus('Showing all records', 'success');
+    }
 
-// Filter by sales type
-function setupSalesTypeFilters() {
-    document.querySelectorAll('#salesTypeFilters .filter-btn').forEach(btn => {
+    function setupSalesTypeFilters() {
+      document.querySelectorAll('#salesTypeFilters .filter-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            // Update active button
-            document.querySelectorAll('#salesTypeFilters .filter-btn').forEach(b => {
-                b.classList.remove('active');
-            });
-            this.classList.add('active');
-            
-            const type = this.getAttribute('data-type');
-            
-            if (type === 'all') {
-                displayData(currentData);
-                showStatus('Showing all records 💖', 'success');
-            } else {
-                const filtered = currentData.filter(item => item.salesType === type);
-                displayData(filtered);
-                showStatus(`Showing ${filtered.length} ${type.toLowerCase()} records 💕`, 'success');
-            }
+          document.querySelectorAll('#salesTypeFilters .filter-btn').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          const type = this.getAttribute('data-type');
+          if (type === 'all') { displayData(currentData); showStatus('Showing all records', 'success'); }
+          else {
+            const filtered = currentData.filter(item => item.salesType === type);
+            displayData(filtered);
+            showStatus(`Showing ${filtered.length} ${type.toLowerCase()} records`, 'success');
+          }
         });
-    });
-}
-
-// Copy individual link
-function copyIndividualLink(index, button) {
-    const dataToUse = filteredData.length > 0 ? filteredData : currentData;
-    const linkData = dataToUse[index];
-    
-    // If already copied, do nothing
-    if (linkData.copied) {
-        return;
+      });
     }
-    
-    const link = linkData.link;
-    
-    // Create a temporary textarea element
-    const textArea = document.createElement("textarea");
-    textArea.value = link;
-    textArea.style.position = "fixed";
-    textArea.style.left = "-999999px";
-    textArea.style.top = "-999999px";
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    
-    try {
+
+    function copyIndividualLink(index, button) {
+      const dataToUse = filteredData.length > 0 ? filteredData : currentData;
+      const linkData = dataToUse[index];
+      if (linkData.copied) return;
+      const link = linkData.link;
+      const textArea = document.createElement("textarea");
+      textArea.value = link;
+      textArea.style.position = "fixed"; textArea.style.left = "-999999px"; textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus(); textArea.select();
+      try {
         const successful = document.execCommand('copy');
         if (successful) {
-            // Mark as copied and disable the button
-            linkData.copied = true;
-            button.textContent = 'Copied! 💖';
+          linkData.copied = true;
+          button.textContent = 'Copied!';
+          button.classList.add('copied');
+          button.disabled = true;
+          showStatus('Link copied to clipboard!', 'success');
+        } else showStatus('Failed to copy link', 'error');
+      } catch { showStatus('Failed to copy link', 'error'); }
+      document.body.removeChild(textArea);
+    }
+
+    function copyAllLinks() {
+      const dataToUse = filteredData.length > 0 ? filteredData : currentData;
+      const links = dataToUse.map(item => item.link).join('\n');
+      const textArea = document.createElement("textarea");
+      textArea.value = links;
+      textArea.style.position = "fixed"; textArea.style.left = "-999999px"; textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus(); textArea.select();
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          dataToUse.forEach(item => item.copied = true);
+          document.querySelectorAll('.copy-btn').forEach(button => {
+            button.textContent = 'Copied!';
             button.classList.add('copied');
             button.disabled = true;
-            
-            // Create hearts animation
-            createHearts(5);
-            
-            showStatus('Link copied to clipboard! 💕', 'success');
-        } else {
-            showStatus('Failed to copy link', 'error');
-        }
-    } catch (err) {
-        console.error('Fallback: Oops, unable to copy', err);
-        showStatus('Failed to copy link', 'error');
+          });
+          showStatus('All links copied to clipboard!', 'success');
+        } else showStatus('Failed to copy all links', 'error');
+      } catch { showStatus('Failed to copy all links', 'error'); }
+      document.body.removeChild(textArea);
     }
-    
-    document.body.removeChild(textArea);
-}
 
-// Copy all links
-function copyAllLinks() {
-    const dataToUse = filteredData.length > 0 ? filteredData : currentData;
-    const links = dataToUse.map(item => item.link).join('\n');
-    
-    // Create a temporary textarea element
-    const textArea = document.createElement("textarea");
-    textArea.value = links;
-    textArea.style.position = "fixed";
-    textArea.style.left = "-999999px";
-    textArea.style.top = "-999999px";
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    
-    try {
-        const successful = document.execCommand('copy');
-        if (successful) {
-            // Mark all links as copied and disable all copy buttons
-            dataToUse.forEach((item, index) => {
-                item.copied = true;
-            });
-            
-            document.querySelectorAll('.copy-btn').forEach(button => {
-                button.textContent = 'Copied! 💖';
-                button.classList.add('copied');
-                button.disabled = true;
-            });
-            
-            // Create hearts animation
-            createHearts(15);
-            
-            showStatus('All links copied to clipboard! 💕', 'success');
-        } else {
-            showStatus('Failed to copy all links', 'error');
-        }
-    } catch (err) {
-        console.error('Fallback: Oops, unable to copy', err);
-        showStatus('Failed to copy all links', 'error');
+    function exportToCSV() {
+      const dataToUse = filteredData.length > 0 ? filteredData : currentData;
+      if (dataToUse.length === 0) return showStatus('No data to export', 'error');
+      let csvContent = "Receipt No.,Sales Type,Survey Model,Generated Link\n";
+      dataToUse.forEach(row => { csvContent += `"${row.receiptNo}","${row.salesType}","${row.surveyModel}","${row.link}"\n`; });
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", "survey_links.csv");
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showStatus('CSV exported successfully!', 'success');
     }
-    
-    document.body.removeChild(textArea);
-}
 
-// Export to CSV
-function exportToCSV() {
-    const dataToUse = filteredData.length > 0 ? filteredData : currentData;
-    
-    if (dataToUse.length === 0) return showStatus('No data to export', 'error');
-    
-    let csvContent = "Receipt No.,Sales Type,Survey Model,Generated Link\n";
-    dataToUse.forEach(row => {
-        csvContent += `"${row.receiptNo}","${row.salesType}","${row.surveyModel}","${row.link}"\n`;
-    });
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "survey_links.csv");
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Create hearts animation
-    createHearts(10);
-    
-    showStatus('CSV exported successfully! 💖', 'success');
-}
-
-// Generate QR codes
-function generateQRCodes(data) {
-    currentQRData = data;
-    const qrSlides = document.getElementById('qrSlides');
-    qrSlides.innerHTML = '';
-    
-    if (data.length === 0) {
-        qrSlides.innerHTML = '<div class="qr-slide"><p>No data available for QR codes</p></div>';
-        updateQRCounter();
-        return;
-    }
-    
-    data.forEach((item, index) => {
+    function generateQRCodes(data) {
+      currentQRData = data;
+      const qrSlides = document.getElementById('qrSlides');
+      qrSlides.innerHTML = '';
+      if (data.length === 0) { qrSlides.innerHTML = '<div style="padding:20px;text-align:center;">No data for QR</div>'; updateQRCounter(); return; }
+      data.forEach((item, index) => {
         const slide = document.createElement('div');
         slide.className = 'qr-slide';
-        
-        // Create QR code
+        slide.style.minWidth = '100%'; slide.style.padding = '12px'; slide.style.display = 'flex'; slide.style.flexDirection = 'column'; slide.style.alignItems = 'center';
         const qrCode = document.createElement('div');
         qrCode.className = 'qr-code';
-        qrCode.id = `qr-${index}`;
-        
-        // Create info div
+        qrCode.style.width = '200px'; qrCode.style.height = '200px'; qrCode.style.margin = '8px auto';
         const info = document.createElement('div');
-        info.className = 'qr-info';
-        info.innerHTML = `
-            <div>Receipt: ${item.receiptNo}</div>
-            <div>Type: ${item.salesType}</div>
-            <div>Model: ${item.surveyModel}</div>
-        `;
-        
-        slide.appendChild(qrCode);
-        slide.appendChild(info);
+        info.style.fontWeight = '500'; info.style.background = 'rgba(255,255,255,0.5)'; info.style.padding = '6px 16px'; info.style.borderRadius = '30px';
+        info.innerHTML = `<div>Receipt: ${item.receiptNo}</div><div>Type: ${item.salesType}</div>`;
+        slide.appendChild(qrCode); slide.appendChild(info);
         qrSlides.appendChild(slide);
-        
-        // Generate QR code
         const qr = qrcode(0, 'M');
         qr.addData(item.link);
         qr.make();
         qrCode.innerHTML = qr.createImgTag(5);
-    });
-    
-    currentQRIndex = 0;
-    updateQRSlides();
-    updateQRCounter();
-    updateQRNavigation();
-}
+      });
+      currentQRIndex = 0;
+      updateQRSlides();
+      updateQRCounter();
+      updateQRNavigation();
+    }
 
-// Open QR modal
-function openQRModal() {
-    document.getElementById('qrModal').style.display = 'flex';
-    generateQRCodes(currentQRData);
-}
+    function openQRModal() {
+      document.getElementById('qrModal').style.display = 'flex';
+      generateQRCodes(currentQRData);
+    }
 
-// Close QR modal
-function closeQRModal() {
-    document.getElementById('qrModal').style.display = 'none';
-}
+    function closeQRModal() { document.getElementById('qrModal').style.display = 'none'; }
 
-// Filter QR codes by sales type
-function setupQRFilters() {
-    document.querySelectorAll('#qrFilters .filter-btn').forEach(btn => {
+    function setupQRFilters() {
+      document.querySelectorAll('#qrFilters .filter-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            // Update active button
-            document.querySelectorAll('#qrFilters .filter-btn').forEach(b => {
-                b.classList.remove('active');
-            });
-            this.classList.add('active');
-            
-            const type = this.getAttribute('data-type');
-            
-            if (type === 'all') {
-                generateQRCodes(currentData);
-            } else {
-                const filtered = currentData.filter(item => item.salesType === type);
-                generateQRCodes(filtered);
-            }
+          document.querySelectorAll('#qrFilters .filter-btn').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          const type = this.getAttribute('data-type');
+          if (type === 'all') generateQRCodes(currentData);
+          else {
+            const filtered = currentData.filter(item => item.salesType === type);
+            generateQRCodes(filtered);
+          }
         });
+      });
+    }
+
+    function nextQR() { if (currentQRIndex < currentQRData.length - 1) { currentQRIndex++; updateQRSlides(); updateQRCounter(); updateQRNavigation(); } }
+    function prevQR() { if (currentQRIndex > 0) { currentQRIndex--; updateQRSlides(); updateQRCounter(); updateQRNavigation(); } }
+    function updateQRSlides() { const qrSlides = document.getElementById('qrSlides'); qrSlides.style.transform = `translateX(-${currentQRIndex * 100}%)`; }
+    function updateQRCounter() { const counter = document.getElementById('qrCounter'); counter.textContent = `${currentQRIndex + 1} / ${currentQRData.length}`; }
+    function updateQRNavigation() { document.getElementById('prevBtn').disabled = currentQRIndex === 0; document.getElementById('nextBtn').disabled = currentQRIndex === currentQRData.length - 1; }
+
+    function clearData() {
+      currentData = []; filteredData = []; currentQRData = []; currentQRIndex = 0;
+      document.querySelector('#linkTable tbody').innerHTML = '';
+      document.getElementById('fileInput').value = '';
+      document.getElementById('fileName').textContent = 'No file chosen';
+      document.getElementById('copyAllBtn').disabled = true;
+      document.getElementById('exportBtn').disabled = true;
+      document.getElementById('openQRBtn').disabled = true;
+      document.getElementById('status').style.display = 'none';
+      document.getElementById('processing').style.display = 'none';
+      document.getElementById('searchBox').disabled = true;
+      document.getElementById('searchBtn').disabled = true;
+      document.getElementById('clearSearchBtn').disabled = true;
+      document.getElementById('searchBox').value = '';
+      document.getElementById('salesTypeFilters').style.display = 'none';
+      closeQRModal();
+    }
+
+    function showStatus(message, type) {
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = message;
+      statusEl.className = `status ${type}`;
+      statusEl.style.display = 'block';
+    }
+
+    document.getElementById('fileInput').addEventListener('change', function() {
+      const fileName = this.files.length > 0 ? this.files[0].name : 'No file chosen';
+      document.getElementById('fileName').textContent = fileName;
+      document.getElementById('generateBtn').disabled = !this.files.length;
     });
-}
-
-// Navigate QR codes
-function nextQR() {
-    if (currentQRIndex < currentQRData.length - 1) {
-        currentQRIndex++;
-        updateQRSlides();
-        updateQRCounter();
-        updateQRNavigation();
-    }
-}
-
-function prevQR() {
-    if (currentQRIndex > 0) {
-        currentQRIndex--;
-        updateQRSlides();
-        updateQRCounter();
-        updateQRNavigation();
-    }
-}
-
-function updateQRSlides() {
-    const qrSlides = document.getElementById('qrSlides');
-    qrSlides.style.transform = `translateX(-${currentQRIndex * 100}%)`;
-}
-
-function updateQRCounter() {
-    const counter = document.getElementById('qrCounter');
-    counter.textContent = `${currentQRIndex + 1} / ${currentQRData.length}`;
-}
-
-function updateQRNavigation() {
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    
-    prevBtn.disabled = currentQRIndex === 0;
-    nextBtn.disabled = currentQRIndex === currentQRData.length - 1;
-}
-
-// Add swipe functionality for QR codes
-function setupSwipe() {
-    const qrDisplay = document.getElementById('qrDisplay');
-    let startX = 0;
-    let endX = 0;
-    
-    qrDisplay.addEventListener('touchstart', function(e) {
-        startX = e.touches[0].clientX;
-    });
-    
-    qrDisplay.addEventListener('touchend', function(e) {
-        endX = e.changedTouches[0].clientX;
-        handleSwipe();
-    });
-    
-    // Add mouse support for desktop
-    qrDisplay.addEventListener('mousedown', function(e) {
-        startX = e.clientX;
-        document.addEventListener('mouseup', handleMouseUp);
-    });
-    
-    function handleMouseUp(e) {
-        endX = e.clientX;
-        handleSwipe();
-        document.removeEventListener('mouseup', handleMouseUp);
-    }
-    
-    function handleSwipe() {
-        const swipeThreshold = 50;
-        const diff = startX - endX;
-        
-        if (Math.abs(diff) > swipeThreshold) {
-            if (diff > 0) {
-                // Swipe left - next
-                nextQR();
-            } else {
-                // Swipe right - previous
-                prevQR();
-            }
-        }
-    }
-}
-
-// Clear all data
-function clearData() {
-    currentData = [];
-    filteredData = [];
-    currentQRData = [];
-    currentQRIndex = 0;
-    document.querySelector('#linkTable tbody').innerHTML = '';
-    document.getElementById('fileInput').value = '';
-    document.getElementById('fileName').textContent = 'No file chosen';
-    document.getElementById('copyAllBtn').disabled = true;
-    document.getElementById('exportBtn').disabled = true;
-    document.getElementById('openQRBtn').disabled = true;
-    document.getElementById('status').style.display = 'none';
-    document.getElementById('processing').style.display = 'none';
-    
-    // Disable search functionality
-    document.getElementById('searchBox').disabled = true;
-    document.getElementById('searchBtn').disabled = true;
-    document.getElementById('clearSearchBtn').disabled = true;
-    document.getElementById('searchBox').value = '';
-    
-    // Hide filters
-    document.getElementById('salesTypeFilters').style.display = 'none';
-    
-    // Close QR modal if open
-    closeQRModal();
-}
-
-// Show status message
-function showStatus(message, type) {
-    const statusEl = document.getElementById('status');
-    statusEl.textContent = message;
-    statusEl.className = `status ${type}`;
-    statusEl.style.display = 'block';
-}
-
-// Enable generate button when file is selected and show file name
-document.getElementById('fileInput').addEventListener('change', function() {
-    const fileName = this.files.length > 0 ? this.files[0].name : 'No file chosen';
-    document.getElementById('fileName').textContent = fileName;
-    document.getElementById('generateBtn').disabled = !this.files.length;
-});
-
-// Enable search when Enter key is pressed in search box
-document.getElementById('searchBox').addEventListener('keyup', function(event) {
-    if (event.key === 'Enter') {
-        searchOrderId();
-    }
-});
-
-// Close modal when clicking outside
-window.addEventListener('click', function(event) {
-    const modal = document.getElementById('qrModal');
-    if (event.target === modal) {
-        closeQRModal();
-    }
-});
-
-// Initialize filters and swipe functionality
-document.addEventListener('DOMContentLoaded', function() {
-    setupSalesTypeFilters();
-    setupQRFilters();
-    setupSwipe();
-});
-</script>
+    document.getElementById('searchBox').addEventListener('keyup', function(event) { if (event.key === 'Enter') searchOrderId(); });
+    window.addEventListener('click', function(event) { const modal = document.getElementById('qrModal'); if (event.target === modal) closeQRModal(); });
+    document.addEventListener('DOMContentLoaded', function() { setupSalesTypeFilters(); setupQRFilters(); });
+  </script>
 </body>
 </html>
